@@ -1,0 +1,8 @@
+.env
+*.o
+
+ExtractBuildings/ExtractBuildings
+ExtractBuildings/ThirdParty/
+ExtractBuildings/OpenStreetMap/
+
+GenerateImages/*.png

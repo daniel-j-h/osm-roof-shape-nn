@@ -1,0 +1,108 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+import argparse
+import os
+import re
+
+import numpy as np
+from PIL import Image
+
+from keras.models import Sequential
+from keras.layers.core import Dense, Dropout, Flatten
+from keras.layers.convolutional import Convolution2D, MaxPooling2D
+from keras.utils import np_utils, generic_utils
+from keras.preprocessing.image import ImageDataGenerator
+
+
+def makeModel(inputShape, numClasses):
+    model = Sequential()
+
+    model.add(Convolution2D(32, 3, 3, activation='relu', input_shape=inputShape))
+    model.add(Convolution2D(32, 3, 3, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(Convolution2D(64, 3, 3, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Dropout(0.25))
+
+    model.add(Flatten())
+    model.add(Dense(256, activation='relu'))
+    model.add(Dropout(0.5))
+
+    model.add(Dense(numClasses, activation='softmax'))
+
+    model.compile(optimizer='rmsprop', loss='categorical_crossentropy')
+
+    return model
+
+
+def getDataFromImages(imageDir):
+    pathsWithClasses = getImagePathsWithClasses(imageDir)
+    numSamples = len(pathsWithClasses)
+  
+    # TODO(daniel-j-h): hardcoded image shape (3, 100, 100) in the following code
+    data = np.zeros((numSamples, 3, 100, 100), dtype='uint8')
+    labels = np.zeros((numSamples, 1), dtype='uint8')
+
+    for idx, (imagePath, imageLabel) in enumerate(pathsWithClasses):
+        # shape from (width, height) 256 color indexed png to (width, height, 3) with three channels
+        image = Image.open(imagePath).convert('RGB')
+        data[idx] = np.array(image).reshape((3, 100, 100))
+        labels[idx] = imageLabel
+
+    return data, labels
+
+
+def getImagePathsWithClasses(imageDir):
+    imagePaths = []
+
+    for imageName in os.listdir(args.imageDirectory):
+        imagePath = os.path.join(args.imageDirectory, imageName)
+        match = re.search(r'(?P<ctr>\d{1,})_(?P<roofClass>\d{1,})\.png', imageName)
+
+        if not match:
+            print('skipping: {} not in counter_class.png format'.format(imagePath))
+            continue
+
+        _, roofClass = match.group('ctr', 'roofClass')
+
+        imagePaths.append((imagePath, int(roofClass)))
+
+    return imagePaths
+
+
+def makeArguments():
+    parser = argparse.ArgumentParser(description='Train Neural Net from classified satellite images',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('imageDirectory', type=str, help='Directory to read images from')
+    parser.add_argument('--numEpochs', dest='numEpochs', type=int, default=1, help='Epochs')
+    parser.add_argument('--batchSize', dest='batchSize', type=int, default=32, help='Batch size')
+
+    return parser.parse_args()
+
+
+if __name__ == '__main__':
+    args = makeArguments()
+
+    data, labels = getDataFromImages(args.imageDirectory)
+    numClasses = labels.size
+
+    x = data.astype('float32')
+    x /= 255
+    y = np_utils.to_categorical(labels, numClasses)
+
+    model = makeModel(data[0].shape, numClasses)
+
+    history = model.fit(x, y, batch_size=args.batchSize, nb_epoch=args.numEpochs, show_accuracy=True)
+    score = model.evaluate(x, y, batch_size=args.batchSize, show_accuracy=True)
+    print('Score: ', score)
+
+    if raw_input('Save weights? (y/n) [n]: ') == 'y':
+        model.save_weights('RoofShapeClassifier.hdf5')
+
+    if raw_input('Save neural net? (y/n) [n]: ') == 'y':
+        with open('RoofShapeNeuralNet.json', 'w') as neuralNetFile:
+            neuralNetFile.write(model.to_json())

@@ -1,0 +1,50 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+import argparse
+import csv
+import os
+from mapbox import Static
+
+# Reads in a (latitude,longitude,class) tuple, writes out ${counter}_${class}.png with satellite view
+# export MAPBOX_ACCESS_TOKEN in order to download the satellite images
+
+def makeArguments():
+    parser = argparse.ArgumentParser(description='Satellite images from (latitude, longitude) tuple',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--width', dest='width', type=int, default=100, help='Image width')
+    parser.add_argument('--height', dest='height', type=int, default=100, help='Image height')
+    parser.add_argument('--zoom', dest='zoom', type=int, default=19, help='Zoom level')
+    parser.add_argument('roofFile', type=str, help='(lat,lon,class) .csv')
+    parser.add_argument('outDirectory', type=str, help='Directory to save images in')
+
+    return parser.parse_args()
+
+
+def writeImage(service, zoom, width, height, outDir, ctr, latitude, longitude, roofClass):
+    response = service.image('mapbox.satellite', lat=latitude, lon=longitude, z=zoom,
+                             width=width, height=height)
+
+    if response.status_code != 200:
+        print('skipping: ({},{}) unable to fetch satellite map'.format(latitude, longitude))
+        return
+
+    fileName = '{}_{}.png'.format(ctr, roofClass)
+    filePath = os.path.join(outDir, fileName)
+
+    with open(filePath, 'wb') as outImageFile:
+        _ = outImageFile.write(response.content)
+
+
+if __name__ == '__main__':
+    args = makeArguments()
+    service = Static()
+
+    with open(args.roofFile, 'rb') as csvFile:
+        reader = csv.reader(csvFile)
+        for (ctr, line) in enumerate(reader):
+            latitude = float(line[0])
+            longitude = float(line[1])
+            roofClass = int(line[2])
+            writeImage(service, args.zoom, args.width, args.height, args.outDirectory, ctr,
+                       latitude, longitude, roofClass)

@@ -1,0 +1,4 @@
+git+git://github.com/Theano/Theano.git
+git+git://github.com/fchollet/keras.git
+pillow
+h5py
