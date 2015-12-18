@@ -96,9 +96,7 @@ if __name__ == '__main__':
 
     model = makeModel(data[0].shape, numClasses)
 
-    history = model.fit(x, y, batch_size=args.batchSize, nb_epoch=args.numEpochs, show_accuracy=True)
-    score = model.evaluate(x, y, batch_size=args.batchSize, show_accuracy=True)
-    print('Score: ', score)
+    history = model.fit(x, y, batch_size=args.batchSize, nb_epoch=args.numEpochs, validation_split=0.1, show_accuracy=True)
 
     if raw_input('Save weights? (y/n) [n]: ') == 'y':
         model.save_weights('RoofShapeClassifier.hdf5')
