@@ -39,18 +39,16 @@ def makeModel(inputShape, numClasses):
     return model
 
 
-def getDataFromImages(imageDir):
+def getDataFromImages(imageDir, imageShape):
     pathsWithClasses = getImagePathsWithClasses(imageDir)
     numSamples = len(pathsWithClasses)
   
-    # TODO(daniel-j-h): hardcoded image shape (3, 100, 100) in the following code
-    data = np.zeros((numSamples, 3, 100, 100), dtype='uint8')
+    data = np.zeros((numSamples, imageShape[0], imageShape[1], imageShape[2]), dtype='uint8')
     labels = np.zeros((numSamples, 1), dtype='uint8')
 
     for idx, (imagePath, imageLabel) in enumerate(pathsWithClasses):
-        # shape from (width, height) 256 color indexed png to (width, height, 3) with three channels
         image = Image.open(imagePath).convert('RGB')
-        data[idx] = np.array(image).reshape((3, 100, 100))
+        data[idx] = np.array(image).reshape(imageShape)
         labels[idx] = imageLabel
 
     return data, labels
@@ -80,6 +78,7 @@ def makeArguments():
     parser.add_argument('imageDirectory', type=str, help='Directory to read images from')
     parser.add_argument('--numEpochs', dest='numEpochs', type=int, default=1, help='Epochs')
     parser.add_argument('--batchSize', dest='batchSize', type=int, default=32, help='Batch size')
+    parser.add_argument('--imageShape', dest='imageShape', type=tuple, default=(3, 100, 100), help='Image shape to train on')
 
     return parser.parse_args()
 
@@ -87,7 +86,7 @@ def makeArguments():
 if __name__ == '__main__':
     args = makeArguments()
 
-    data, labels = getDataFromImages(args.imageDirectory)
+    data, labels = getDataFromImages(args.imageDirectory, args.imageShape)
     numClasses = labels.size
 
     x = data.astype('float32')
