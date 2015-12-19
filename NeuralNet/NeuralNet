@@ -98,8 +98,5 @@ if __name__ == '__main__':
     history = model.fit(x, y, batch_size=args.batchSize, nb_epoch=args.numEpochs, validation_split=0.1, show_accuracy=True)
 
     if raw_input('Save weights? (y/n) [n]: ') == 'y':
-        model.save_weights('RoofShapeClassifier.hdf5')
-
-    if raw_input('Save neural net? (y/n) [n]: ') == 'y':
-        with open('RoofShapeNeuralNet.json', 'w') as neuralNetFile:
-            neuralNetFile.write(model.to_json())
+        outFile = raw_input('File name? [RoofShapeWeights.hdf5]: ') or 'RoofShapeWeights.hdf5'
+        model.save_weights(outFile)
