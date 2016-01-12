@@ -2,6 +2,9 @@
 
 Learning and Predicting Roof Shapes from OpenStreetMap data.
 
+> "probably the most badass use of the static maps python sdk to date!"
+-- Matthew Perry
+
 ## Getting Started
 
 In the root directory, create and acivate a venv:
